@@ -43,7 +43,19 @@ const expectedTools = [
   'compare_worker_routes',
   'focus_work_item',
   'stage_assignment',
+  'inspect_evidence_packet',
+  'verify_evidence_packet',
 ];
+
+const readOnlyTools = [
+  'get_mission_brief',
+  'inspect_work_item',
+  'compare_worker_routes',
+  'inspect_evidence_packet',
+];
+
+const forbiddenAgentAuthority =
+  /name:\s*['"](?:approve|download|execute|publish|release)[^'"]*['"]/;
 
 const releaseText = [
   source,
@@ -69,13 +81,15 @@ for (const tool of expectedTools) {
 
 check(
   'registration-count',
-  (source.match(/modelContext\.registerTool\(/g) ?? []).length === 5,
-  'exactly five site-tool registrations',
+  (source.match(/modelContext\.registerTool\(/g) ?? []).length ===
+    expectedTools.length,
+  'exactly seven site-tool registrations',
 );
 check(
   'closed-schemas',
-  (source.match(/additionalProperties: false/g) ?? []).length >= 5,
-  'every input schema rejects undeclared fields',
+  (source.match(/additionalProperties: false/g) ?? []).length ===
+    expectedTools.length,
+  'all seven input schemas reject undeclared fields',
 );
 check(
   'registration-cleanup',
@@ -86,14 +100,22 @@ check(
 );
 check(
   'optional-execution-signal',
-  (source.match(/options\?\.signal\?\.aborted/g) ?? []).length === 5 &&
+  (source.match(/options\?\.signal\?\.aborted/g) ?? []).length ===
+    expectedTools.length &&
     webmcpTypes.includes('options?: { signal?: AbortSignal }'),
-  'all tools tolerate runtimes that omit the optional execution signal',
+  'all seven tools tolerate runtimes that omit the optional execution signal',
 );
 check(
   'read-only-annotations',
-  (source.match(/readOnlyHint: true/g) ?? []).length === 3,
-  'three inspection tools are marked read-only',
+  (source.match(/readOnlyHint: true/g) ?? []).length === readOnlyTools.length &&
+    readOnlyTools.every((tool) => {
+      const start = source.indexOf(`name: '${tool}'`);
+      const annotation = source.indexOf('readOnlyHint: true', start);
+      const nextTool = source.indexOf('name: ', start + 1);
+      return start >= 0 && annotation > start &&
+        (nextTool === -1 || annotation < nextTool);
+    }),
+  'four inspection tools are marked read-only',
 );
 check(
   'human-authority',
@@ -105,7 +127,36 @@ check(
   'page-state-only',
   source.includes("side_effects: 'page_state_only'") &&
     source.includes("side_effects: 'selection_only'"),
-  'all agent writes are bounded page-state changes',
+  'agent routing writes are bounded page-state changes',
+);
+check(
+  'verification-receipt-side-effect',
+  source.includes("name: 'verify_evidence_packet'") &&
+    source.includes("verified_by: 'webmcp_agent'") &&
+    source.includes("side_effects: 'verification_receipt_only'"),
+  'packet verification records a receipt without approval authority',
+);
+check(
+  'evidence-packet-contract',
+  source.includes("schema_version: 'captain-evidence-packet-v1'") &&
+    source.includes("envelope_version: 'captain-evidence-envelope-v1'") &&
+    source.includes('function canonicalPacketJson(packet: EvidencePacket)') &&
+    source.includes('crypto.subtle.digest') &&
+    source.includes('const computedHash = await sha256Hex(current.packetJson)') &&
+    source.includes('pass: computedHash === current.packetSha256') &&
+    source.includes("status: pass ? 'verified' : 'draft'") &&
+    source.includes("current.status !== 'approved'") &&
+    source.includes("current.verification?.status !== 'pass'") &&
+    source.includes('new Blob([downloadJson]'),
+  'deterministic packet, digest, receipt, and download gates are present',
+);
+check(
+  'forbidden-agent-authority',
+  !forbiddenAgentAuthority.test(source) &&
+    source.includes('packet approval and download remain human-only') &&
+    source.includes("authority: 'human_only'") &&
+    source.includes('release: { executed: false }'),
+  'no agent tool can approve, download, execute, publish, or release',
 );
 
 const outboundPatterns = [

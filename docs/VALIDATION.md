@@ -2,26 +2,27 @@
 
 Date: 2026-08-27
 
-Status: **local release candidate passed; external release not performed**
+Status: **CLI candidate verified; seven-tool desktop QA pending; external release not performed**
 
 ## Automated verification
 
 | Check | Result |
 | --- | --- |
-| WebMCP contract tests | 5 passed, 0 failed |
-| Deterministic release checks | 17 passed, 0 failed |
+| WebMCP contract tests | 7 passed, 0 failed |
+| Deterministic WebMCP checks | 22 passed, 0 failed |
 | ESLint | Passed |
 | Production build | Passed |
 
-The contract suite verifies the exact five-tool surface, closed input schemas,
-registration cleanup, optional execution-signal compatibility, reversible
-write boundaries, human-only approval language, documentation coverage, and
-absence of outbound request primitives.
+The contract suite verifies the exact seven-tool surface, seven closed input
+schemas, registration cleanup, optional execution-signal compatibility, four
+read-only tools, reversible routing writes, receipt-only verification,
+deterministic packet and digest gates, human-only approval and download,
+documentation coverage, and absence of outbound request primitives.
 
-## Built-in browser smoke test
+## Historical built-in browser smoke test
 
-The local release candidate was opened in a WebMCP-capable in-app browser. The
-browser discovered these page-defined tools:
+The stable five-tool baseline was previously opened in a WebMCP-capable in-app
+browser. The browser discovered these page-defined tools:
 
 1. `get_mission_brief`
 2. `inspect_work_item`
@@ -40,12 +41,30 @@ Each tool was invoked once against synthetic item `T-102`.
 - The page displayed `5 SITE TOOLS READY` and `STAGED PROPOSAL`.
 - The human **Return** action removed the staged proposal.
 
+That historical smoke test remains valid for the five named tools, but it is not
+evidence that the expanded seven-tool packet flow works in the desktop app.
+
 ## Compatibility repair captured during smoke testing
 
 The browser's tool executor may omit the optional callback options object. The
 first smoke call exposed that mismatch. The implementation now checks an abort
 signal only when supplied, and the behavior is locked by both the TypeScript
 declaration and deterministic tests.
+
+## Seven-tool desktop QA not yet performed
+
+The following remain required before final WebMCP acceptance:
+
+1. Discover all seven registered tools in ChatGPT's in-app browser.
+2. Invoke each tool against the shared synthetic mission state.
+3. Confirm that human route approval creates the same packet the agent inspects.
+4. Confirm that verification records a passing receipt but cannot approve or
+   download.
+5. Confirm that digest or contract failure keeps packet approval and download
+   locked.
+6. Use the visible controls for human packet approval and JSON download.
+7. Read back the downloaded JSON envelope and match its SHA-256 digest to the
+   packet shown in the interface.
 
 ## Release gates not exercised
 

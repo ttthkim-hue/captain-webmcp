@@ -4,7 +4,7 @@ Date: 2026-08-27
 
 Artifact: `artifacts/video/captain-webmcp-demo-v1.mp4`
 
-Status: **local review copy passed; not published**
+Status: **five-tool V1 local review copy passed; not published**
 
 ## Media contract
 
@@ -38,6 +38,17 @@ Status: **local review copy passed; not published**
   WebMCP rationale remained legible in the 16:9 output.
 - Audio measured at the target -16 LUFS with -1.5 dBFS true peak.
 - The duration is below the challenge's three-minute limit.
+
+## Evidence-packet continuation boundary
+
+This V1 artifact is historical evidence for the five-tool routing flow only. It
+does not show or validate the two evidence-packet tools, human packet approval,
+JSON download, or downloaded digest readback.
+
+Before any replacement video is recorded or published, the seven-tool flow must
+pass separate desktop QA in ChatGPT's in-app browser. The recording plan in
+`DEMO_SCRIPT.md` and narration in `VIDEO_NARRATION.md` describe that future
+capture; they are not evidence that it happened.
 
 ## Release boundary
 

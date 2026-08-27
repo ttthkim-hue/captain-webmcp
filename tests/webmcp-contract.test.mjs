@@ -26,6 +26,15 @@ const expectedTools = [
   'compare_worker_routes',
   'focus_work_item',
   'stage_assignment',
+  'inspect_evidence_packet',
+  'verify_evidence_packet',
+];
+
+const readOnlyTools = [
+  'get_mission_brief',
+  'inspect_work_item',
+  'compare_worker_routes',
+  'inspect_evidence_packet',
 ];
 
 test('registers the exact public WebMCP tool surface once', () => {
@@ -40,20 +49,57 @@ test('registers the exact public WebMCP tool surface once', () => {
 });
 
 test('uses bounded schemas and registration lifecycle cleanup', () => {
-  assert.ok((source.match(/additionalProperties: false/g) ?? []).length >= 5);
+  assert.equal(
+    (source.match(/additionalProperties: false/g) ?? []).length,
+    expectedTools.length,
+  );
   assert.match(source, /new AbortController\(\)/);
   assert.match(source, /\{ signal: registration\.signal \}/);
   assert.match(source, /registration\.abort\(\)/);
-  assert.equal((source.match(/options\?\.signal\?\.aborted/g) ?? []).length, 5);
+  assert.equal(
+    (source.match(/options\?\.signal\?\.aborted/g) ?? []).length,
+    expectedTools.length,
+  );
+  assert.equal(
+    (source.match(/readOnlyHint: true/g) ?? []).length,
+    readOnlyTools.length,
+  );
   assert.match(webmcpTypes, /options\?: \{ signal\?: AbortSignal \}/);
 });
 
 test('keeps agent writes reversible and human approval separate', () => {
   assert.match(source, /side_effects: 'page_state_only'/);
   assert.match(source, /side_effects: 'selection_only'/);
+  assert.match(source, /side_effects: 'verification_receipt_only'/);
   assert.match(source, /No work was executed and no release was approved\./);
-  assert.match(source, /Human approve/);
-  assert.doesNotMatch(source, /name: '(?:approve|execute|publish|release)[^']*'/);
+  assert.match(source, /packet approval and download remain human-only/);
+  assert.doesNotMatch(
+    source,
+    /name: '(?:approve|download|execute|publish|release)[^']*'/,
+  );
+});
+
+test('builds and verifies a deterministic evidence packet contract', () => {
+  assert.match(source, /schema_version: 'captain-evidence-packet-v1'/);
+  assert.match(source, /envelope_version: 'captain-evidence-envelope-v1'/);
+  assert.match(source, /function canonicalPacketJson\(packet: EvidencePacket\)/);
+  assert.match(source, /crypto\.subtle\.digest\(/);
+  assert.match(source, /const computedHash = await sha256Hex\(current\.packetJson\)/);
+  assert.match(source, /pass: computedHash === current\.packetSha256/);
+  assert.match(source, /status: pass \? 'verified' : 'draft'/);
+  assert.match(source, /verified_by: 'webmcp_agent'/);
+});
+
+test('download stays human-only behind passing verification and explicit approval', () => {
+  assert.match(source, /if \(!current \|\| current\.status !== 'verified'\) return;/);
+  assert.match(
+    source,
+    /current\.status !== 'approved' \|\|\s*current\.verification\?\.status !== 'pass'/,
+  );
+  assert.match(source, /human_approval: \{/);
+  assert.match(source, /authority: 'human_only'/);
+  assert.match(source, /release: \{ executed: false \}/);
+  assert.match(source, /new Blob\(\[downloadJson\]/);
 });
 
 test('does not contain an outbound request primitive', () => {

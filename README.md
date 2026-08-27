@@ -9,10 +9,12 @@ Captain is a shared control room where a person and a browser agent route work
 across specialized AI workers without giving up human authority. It is a public,
 synthetic entry built for the [OpenAI WebMCP Challenge](https://openai.com/webmcp-challenge/).
 
-The page is useful on its own, but it also registers five imperative WebMCP
+The page is useful on its own, but it also registers seven imperative WebMCP
 tools. A compatible browser agent can inspect the exact mission state visible
-on screen, compare routes, focus an item for shared review, and stage a
-reversible assignment proposal. Only the person can approve it.
+on screen, compare routes, focus an item for shared review, stage a reversible
+assignment proposal, and inspect and verify the deterministic, downloadable evidence packet
+created after route approval. Route approval, packet approval, JSON download,
+publication, and release remain human-only.
 
 ## Why this needs WebMCP
 
@@ -36,9 +38,13 @@ collaborative workflow.
 | `compare_worker_routes` | Compare Sol, Luna, Qwen, and exact-tool fit | None |
 | `focus_work_item` | Focus the same item in the visible interface | Selection only |
 | `stage_assignment` | Stage a bounded worker proposal for review | Reversible page state only |
+| `inspect_evidence_packet` | Read the generated packet, digest, receipt, and authority boundary | None |
+| `verify_evidence_packet` | Recompute the digest and task contract, then record a visible receipt | Verification receipt only |
 
 All tools are registered with `document.modelContext.registerTool`, a shared
-`AbortController`, narrow JSON schemas, and explicit read-only annotations.
+`AbortController`, closed JSON schemas, optional execution-signal handling, and
+explicit read-only annotations. Four tools are read-only; the other three are
+limited to selection, reversible page state, or a verification receipt.
 
 ## Human-agent flow
 
@@ -46,15 +52,20 @@ All tools are registered with `document.modelContext.registerTool`, a shared
 2. The agent reads the mission through WebMCP instead of scraping the page.
 3. The agent compares worker routes and focuses the relevant item in the shared
    interface.
-4. The agent stages a proposal. It does not execute work or approve a release.
-5. The person reviews the visible evidence and chooses **Human approve** or
-   **Return**.
+4. The agent stages a proposal. It does not execute work or approve anything.
+5. The person explicitly approves the route, which deterministically creates a
+   canonical packet and browser-native SHA-256 digest.
+6. The agent inspects and verifies the packet, recording a receipt only.
+7. The person explicitly approves the passing packet.
+8. The person downloads a JSON envelope containing the packet, digest,
+   verification receipt, human approval, and `release.executed=false`.
 
 Suggested prompt:
 
 > Inspect the mission, compare routes for T-102, focus it in the shared
-> interface, then stage the safest assignment. Do not approve or execute the
-> work.
+> interface, then stage the safest assignment. After I approve the route,
+> inspect and verify the evidence packet. Do not approve, download, publish, or
+> release anything.
 
 ## The synthetic team
 
@@ -88,17 +99,24 @@ pnpm run lint
 pnpm run build
 ```
 
-The deterministic validator checks the five-tool contract, bounded schemas,
-registration cleanup, human authority language, absence of outbound calls,
-release-file presence, and social-card dimensions.
+The deterministic validator checks the seven-tool contract, seven closed
+schemas, optional execution signals, four read-only tools, registration
+cleanup, deterministic packet and digest gates, receipt-only agent verification,
+forbidden agent authority, absence of outbound calls, release-file presence,
+and social-card dimensions.
+
+These CLI checks do not replace the final desktop QA: the seven tools still
+need discovery and real calls in ChatGPT's in-app browser, followed by JSON
+download and digest readback.
 
 ## Safety and privacy
 
 - Public synthetic data only.
 - No accounts, analytics, cookies, telemetry, model APIs, or outbound requests.
 - No raw prompts, responses, credentials, research data, or local identifiers.
-- Agent writes are reversible session state only.
-- Assignment approval and release remain human-only.
+- Agent writes are reversible session state or a verification receipt only.
+- Route approval, packet approval, download, publication, and release remain
+  human-only.
 
 ## Release status
 
