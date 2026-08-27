@@ -90,6 +90,7 @@ a {
 .toolSignal {
   display: flex;
   align-items: center;
+  min-height: 44px;
   gap: 8px;
   padding: 8px 0;
   border: 0;
@@ -185,10 +186,15 @@ a {
   text-decoration: none;
 }
 
-.textLink:hover,
+.textLink:hover {
+  color: var(--cyan);
+}
+
 .textLink:focus-visible {
   color: var(--cyan);
-  outline: none;
+  outline: 3px solid rgba(119, 231, 224, 0.32);
+  outline-offset: 4px;
+  border-radius: 3px;
 }
 
 .heroStat {
@@ -659,6 +665,10 @@ a {
   gap: 8px;
 }
 
+.proposalActions button {
+  min-height: 44px;
+}
+
 .ghostButton,
 .approveButton {
   padding: 10px 13px;
@@ -678,6 +688,231 @@ a {
   border: 0;
   background: var(--amber);
   color: #17130a;
+}
+
+.evidencePacket {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+  gap: clamp(28px, 5vw, 72px);
+  align-items: stretch;
+  margin-top: 18px;
+  padding: clamp(28px, 5vw, 56px);
+  border-color: rgba(119, 231, 224, 0.2);
+  background:
+    linear-gradient(135deg, rgba(119, 231, 224, 0.045), transparent 44%),
+    var(--panel);
+}
+
+.packetIntro {
+  min-width: 0;
+}
+
+.packetIntro h2 {
+  margin: 0;
+  font-size: clamp(28px, 4vw, 50px);
+  letter-spacing: -0.055em;
+  line-height: 1;
+}
+
+.packetIntro > p:not(.sectionLabel) {
+  max-width: 650px;
+  margin: 18px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.packetStatus {
+  display: inline-flex;
+  min-height: 26px;
+  align-items: center;
+  padding: 5px 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: #9ca4b2;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.packetStatus.draft {
+  border-color: rgba(246, 207, 114, 0.42);
+  background: rgba(246, 207, 114, 0.08);
+  color: var(--amber);
+}
+
+.packetStatus.verified {
+  border-color: rgba(126, 232, 159, 0.42);
+  background: rgba(126, 232, 159, 0.08);
+  color: #8ff0ad;
+}
+
+.packetStatus.approved {
+  border-color: rgba(184, 161, 255, 0.45);
+  background: rgba(184, 161, 255, 0.1);
+  color: #cbbcff;
+}
+
+.packetContract {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 28px;
+}
+
+.packetContract > div {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 11px;
+  background: rgba(0, 0, 0, 0.16);
+}
+
+.packetContract span,
+.packetContract strong {
+  display: block;
+}
+
+.packetContract span {
+  margin-bottom: 8px;
+  color: var(--cyan);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 8px;
+  letter-spacing: 0.12em;
+}
+
+.packetContract strong {
+  overflow-wrap: anywhere;
+  color: #dfe4eb;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.packetEmpty {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  margin-top: 28px;
+  padding: 18px;
+  border: 1px dashed rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  color: var(--muted);
+}
+
+.packetEmpty span {
+  color: var(--amber);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 10px;
+}
+
+.packetEmpty p {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.packetVerification {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  padding: clamp(22px, 3.5vw, 34px);
+  border: 1px solid rgba(184, 161, 255, 0.2);
+  border-radius: 16px;
+  background: rgba(5, 7, 12, 0.5);
+}
+
+.verificationLabel {
+  color: var(--violet);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+.packetVerification > strong {
+  margin-top: 28px;
+  font-size: 18px;
+}
+
+.packetVerification > p {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.packetVerification code {
+  display: block;
+  margin-top: 12px;
+  overflow-wrap: anywhere;
+  color: #aeb7c5;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 9px;
+}
+
+.verificationChecks {
+  display: grid;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+.verificationChecks span {
+  display: block;
+  padding: 9px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 8px;
+  color: #8992a0;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.verificationChecks .pass {
+  border-color: rgba(126, 232, 159, 0.24);
+  background: rgba(126, 232, 159, 0.06);
+  color: #8ff0ad;
+}
+
+.verificationChecks .pending {
+  color: #8f98a7;
+}
+
+.packetActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: auto;
+  padding-top: 26px;
+}
+
+.packetActions button {
+  min-height: 44px;
+}
+
+.downloadButton {
+  padding: 10px 14px;
+  border: 1px solid rgba(119, 231, 224, 0.48);
+  border-radius: 9px;
+  background: rgba(119, 231, 224, 0.12);
+  color: #a1fff8;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ghostButton:hover,
+.approveButton:hover,
+.downloadButton:hover {
+  filter: brightness(1.1);
+}
+
+.ghostButton:focus-visible,
+.approveButton:focus-visible,
+.downloadButton:focus-visible {
+  outline: 3px solid rgba(119, 231, 224, 0.32);
+  outline-offset: 3px;
 }
 
 .briefing {
@@ -814,7 +1049,7 @@ a {
 }
 
 .routeCard > small {
-  color: #626b7a;
+  color: #828da0;
   line-height: 1.55;
 }
 
@@ -904,7 +1139,7 @@ a {
 }
 
 .activityList time {
-  color: #596170;
+  color: #7b8698;
   text-align: right;
 }
 
@@ -924,6 +1159,7 @@ footer {
   .hero,
   .workspace,
   .briefing,
+  .evidencePacket,
   .sectionIntro {
     grid-template-columns: 1fr;
   }
@@ -1000,13 +1236,20 @@ footer {
 
   .proposalBar,
   .proposalActions,
+  .packetActions,
   .activityHead {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .proposalActions button {
+  .proposalActions button,
+  .packetActions button {
+    width: 100%;
     flex: 1;
+  }
+
+  .packetContract {
+    grid-template-columns: 1fr;
   }
 
   .routeGrid,

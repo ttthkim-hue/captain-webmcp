@@ -1,4 +1,11 @@
-# Captain demo script — target 2 minutes 25 seconds
+# Captain evidence-packet demo script — public recording guide
+
+Status: **local V2 recorded and verified; not published**
+
+The reproducible local V2 uses the exact eight scenes in
+`scripts/video-scenes.json`, plus a three-second intro and four-second outro.
+Its measured runtime is 161.572 seconds. The timeline below remains the manual
+guide for a public browser capture if a deployed-URL recording is preferred.
 
 ## Recording setup
 
@@ -35,10 +42,11 @@ objective evidence.”
 
 **Narration:**
 
-“Captain registers five site tools directly in the page. The agent can read the
-mission, inspect an item, compare worker routes, focus shared state, and stage a
-proposal. The schemas use exact item and worker identifiers, so the agent does
-not need to guess at buttons or DOM selectors.”
+“Captain registers seven site tools directly in the page. The agent can read the
+mission, inspect an item, compare worker routes, focus shared state, stage a
+proposal, and inspect and verify the resulting evidence packet. Closed schemas
+use exact identifiers, so the agent does not need to guess at buttons or DOM
+selectors.”
 
 **On screen:** Open the agent briefing and paste:
 
@@ -63,20 +71,32 @@ proposal.
 **Narration:**
 
 “There is deliberately no WebMCP tool for approval or release. The agent cannot
-execute work, contact an outside service, or publish anything. I can return the
-proposal, or explicitly approve it here.”
+execute work, contact an outside service, or publish anything. I explicitly
+approve the route here, and Captain creates a canonical packet and SHA-256
+digest.”
 
-**On screen:** Click **Return**, ask the agent to stage again, then click
-**Human approve**.
+**On screen:** Click **Human approve route**. Ask the agent to call
+`inspect_evidence_packet` and `verify_evidence_packet`. Show the visible passing
+receipt and unchanged `release.executed=false` authority boundary.
 
-### 2:05–2:25 — Close
+### 2:05–2:22 — Human packet approval and download
 
 **Narration:**
 
-“Captain shows the human-agent experience I want: semantic tools instead of
-screen guessing, the smallest capable worker for each job, visible evidence,
-and human authority at the boundary. The application and WebMCP contract are
-open source.”
+“Agent verification records a receipt only. I still approve the passing packet
+myself, then download a JSON envelope containing the packet, digest, receipt,
+human approval, and a false release flag.”
+
+**On screen:** Click **Human approve packet**, then **Download JSON evidence
+packet**. Read back the downloaded digest against the visible packet digest.
+
+### 2:22–2:35 — Close
+
+**Narration:**
+
+“Captain turns a routing decision into deterministic evidence while preserving
+human authority. Agents inspect, stage, and verify. People approve and download.
+The application and WebMCP contract are open source.”
 
 **On screen:** Scroll through Why WebMCP, then finish on the Captain hero.
 
@@ -84,5 +104,6 @@ open source.”
 
 - Duration is below 3:00.
 - Audio is clear and the video is publicly viewable.
-- The live URL, public repository, and tool interaction are all visible.
+- The live URL, public repository, and all seven tool interactions are visible.
+- The downloaded JSON digest matches the visible packet digest.
 - No private tab, account identity, local path, or operational dataset appears.

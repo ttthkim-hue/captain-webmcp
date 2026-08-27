@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [string]$VoiceName = "Microsoft Mark",
-    [int]$VoiceRate = -1
+    [int]$VoiceRate = 0
 )
 
 $ErrorActionPreference = "Stop"
@@ -13,7 +13,7 @@ $audioRoot = Join-Path $artifactRoot "audio"
 $clipsRoot = Join-Path $artifactRoot "clips"
 $sceneSpecPath = Join-Path $scriptRoot "video-scenes.json"
 $socialCardPath = Join-Path $projectRoot "public\og.png"
-$outputPath = Join-Path $artifactRoot "captain-webmcp-demo-v1.mp4"
+$outputPath = Join-Path $artifactRoot "captain-webmcp-demo-v2.mp4"
 
 New-Item -ItemType Directory -Force -Path $audioRoot, $clipsRoot | Out-Null
 
@@ -108,7 +108,13 @@ try {
         $fadeOutText = $fadeOut.ToString("0.000", [System.Globalization.CultureInfo]::InvariantCulture)
         $audioFadeText = $audioFadeOut.ToString("0.000", [System.Globalization.CultureInfo]::InvariantCulture)
         $escapedTitle = ([string]$scene.title).Replace("'", "\'").Replace(":", "\:")
-        $filter = "[0:v]scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080,drawbox=x=45:y=42:w=760:h=88:color=black@0.64:t=fill,drawtext=fontfile='C\:/Windows/Fonts/seguisb.ttf':text='$escapedTitle':fontcolor=white:fontsize=34:x=76:y=67,fade=t=in:st=0:d=0.35,fade=t=out:st=${fadeOutText}:d=0.5,format=yuv420p[v];[1:a]adelay=500|500,aformat=channel_layouts=stereo,loudnorm=I=-16:TP=-1.5:LRA=11,aresample=48000,apad=pad_dur=0.7,afade=t=out:st=${audioFadeText}:d=0.4[a]"
+        $fitMode = if ($scene.PSObject.Properties.Name -contains "fit") { [string]$scene.fit } else { "cover" }
+        $frameFilter = if ($fitMode -eq "contain") {
+            "scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0x080b12"
+        } else {
+            "scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080"
+        }
+        $filter = "[0:v]${frameFilter},drawbox=x=45:y=42:w=760:h=88:color=black@0.64:t=fill,drawtext=fontfile='C\:/Windows/Fonts/seguisb.ttf':text='$escapedTitle':fontcolor=white:fontsize=34:x=76:y=67,fade=t=in:st=0:d=0.35,fade=t=out:st=${fadeOutText}:d=0.5,format=yuv420p[v];[1:a]adelay=500|500,aformat=channel_layouts=stereo,loudnorm=I=-16:TP=-1.5:LRA=11,aresample=48000,apad=pad_dur=0.7,afade=t=out:st=${audioFadeText}:d=0.4[a]"
 
         Invoke-Checked -Executable $ffmpeg -Arguments @(
             "-y", "-loop", "1", "-framerate", "30", "-i", $framePath,
@@ -124,6 +130,7 @@ try {
             id = [string]$scene.id
             title = [string]$scene.title
             frame = [string]$scene.frame
+            fit = $fitMode
             audio_duration_seconds = [Math]::Round($audioDuration, 3)
             clip_duration_seconds = [Math]::Round($clipDuration, 3)
         })
@@ -153,7 +160,7 @@ $finalDuration = Get-MediaDuration -Path $outputPath
 $finalHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $outputPath).Hash.ToLowerInvariant()
 $manifest = [ordered]@{
     status = "complete"
-    output = "captain-webmcp-demo-v1.mp4"
+    output = "captain-webmcp-demo-v2.mp4"
     voice = $VoiceName
     voice_rate = $VoiceRate
     width = 1920
@@ -163,7 +170,7 @@ $manifest = [ordered]@{
     sha256 = $finalHash
     scenes = $sceneManifest
 }
-$manifestPath = Join-Path $artifactRoot "build-manifest.json"
+$manifestPath = Join-Path $artifactRoot "build-manifest-v2.json"
 [System.IO.File]::WriteAllText(
     $manifestPath,
     ($manifest | ConvertTo-Json -Depth 6),
