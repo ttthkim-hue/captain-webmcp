@@ -82,7 +82,7 @@ packet:
 
 1. a human chooses a synthetic release goal;
 2. the agent inspects and routes the work;
-3. Captain generates a deterministic handoff contract and manifest;
+3. Captain generates a deterministic handoff contract and evidence packet;
 4. the agent verifies the packet through WebMCP;
 5. the human approves the packet, not an opaque worker action;
 6. the user can download the synthetic evidence artifact.

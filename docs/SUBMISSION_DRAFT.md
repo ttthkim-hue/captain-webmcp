@@ -25,9 +25,9 @@ imperative WebMCP tools.
 The agent can inspect the mission, inspect a work item, compare worker routes,
 focus shared page state, stage a reversible assignment proposal, and inspect
 and verify the deterministic evidence packet created after human route
-approval. It cannot execute the task, approve a route or packet, download the
-JSON, publish a release, or contact an external service. Those decisions stay
-visibly human.
+approval. The registered WebMCP tool surface cannot execute the task, approve a
+route or packet, download the JSON, publish a release, or contact an external
+service. Those decisions stay visibly human.
 
 ## Why it is useful
 

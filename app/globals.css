@@ -90,6 +90,7 @@ a {
 .toolSignal {
   display: flex;
   align-items: center;
+  min-height: 44px;
   gap: 8px;
   padding: 8px 0;
   border: 0;
@@ -185,10 +186,15 @@ a {
   text-decoration: none;
 }
 
-.textLink:hover,
+.textLink:hover {
+  color: var(--cyan);
+}
+
 .textLink:focus-visible {
   color: var(--cyan);
-  outline: none;
+  outline: 3px solid rgba(119, 231, 224, 0.32);
+  outline-offset: 4px;
+  border-radius: 3px;
 }
 
 .heroStat {
@@ -659,6 +665,10 @@ a {
   gap: 8px;
 }
 
+.proposalActions button {
+  min-height: 44px;
+}
+
 .ghostButton,
 .approveButton {
   padding: 10px 13px;
@@ -1039,7 +1049,7 @@ a {
 }
 
 .routeCard > small {
-  color: #626b7a;
+  color: #828da0;
   line-height: 1.55;
 }
 
@@ -1129,7 +1139,7 @@ a {
 }
 
 .activityList time {
-  color: #596170;
+  color: #7b8698;
   text-align: right;
 }
 

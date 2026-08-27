@@ -13,8 +13,9 @@ The page is useful on its own, but it also registers seven imperative WebMCP
 tools. A compatible browser agent can inspect the exact mission state visible
 on screen, compare routes, focus an item for shared review, stage a reversible
 assignment proposal, and inspect and verify the deterministic, downloadable evidence packet
-created after route approval. Route approval, packet approval, JSON download,
-publication, and release remain human-only.
+created after route approval. No registered WebMCP tool can approve a route or
+packet, download JSON, publish, or release; those actions remain visible human
+controls.
 
 ## Why this needs WebMCP
 
@@ -102,8 +103,8 @@ pnpm run build
 The deterministic validator checks the seven-tool contract, seven closed
 schemas, optional execution signals, four read-only tools, registration
 cleanup, deterministic packet and digest gates, receipt-only agent verification,
-forbidden agent authority, absence of outbound calls, release-file presence,
-and social-card dimensions.
+forbidden agent authority, absence of outbound calls, license presence, and
+social-card dimensions.
 
 These CLI checks do not replace the final desktop QA: the seven tools still
 need discovery and real calls in ChatGPT's in-app browser, followed by JSON
@@ -115,8 +116,8 @@ download and digest readback.
 - No accounts, analytics, cookies, telemetry, model APIs, or outbound requests.
 - No raw prompts, responses, credentials, research data, or local identifiers.
 - Agent writes are reversible session state or a verification receipt only.
-- Route approval, packet approval, download, publication, and release remain
-  human-only.
+- No registered site tool can approve a route or packet, download, publish, or
+  release; those controls remain visible human actions.
 
 ## Release status
 

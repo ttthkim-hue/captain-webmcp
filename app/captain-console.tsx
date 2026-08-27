@@ -96,7 +96,6 @@ type VerificationReceipt = {
 
 type PacketState = {
   packet: EvidencePacket;
-  packetJson: string;
   packetSha256: string;
   status: 'draft' | 'verified' | 'approved';
   verification: VerificationReceipt | null;
@@ -360,6 +359,16 @@ export default function CaptainConsole() {
   const packetRef = useRef(packetState);
   const activityId = useRef(1);
 
+  const syncItems = useCallback((nextItems: WorkItem[]) => {
+    itemsRef.current = nextItems;
+    setItems(nextItems);
+  }, []);
+
+  const syncPacketState = useCallback((nextState: PacketState | null) => {
+    packetRef.current = nextState;
+    setPacketState(nextState);
+  }, []);
+
   useEffect(() => {
     itemsRef.current = items;
   }, [items]);
@@ -402,9 +411,9 @@ export default function CaptainConsole() {
 
       setSelectedTaskId(taskId);
       setProposal({ taskId, worker, reasonCode, source });
-      setPacketState(null);
-      setItems((current) =>
-        current.map((candidate) =>
+      syncPacketState(null);
+      syncItems(
+        itemsRef.current.map((candidate) =>
           candidate.id === taskId
             ? { ...candidate, status: 'staged' }
             : candidate,
@@ -425,7 +434,7 @@ export default function CaptainConsole() {
         authority: 'No work was executed and no release was approved.',
       };
     },
-    [addActivity],
+    [addActivity, syncItems, syncPacketState],
   );
 
   const verifyCurrentPacket = useCallback(
@@ -444,7 +453,9 @@ export default function CaptainConsole() {
       const sourceItem = INITIAL_ITEMS.find(
         (item) => item.id === current.packet.handoff.task_id,
       );
-      const computedHash = await sha256Hex(current.packetJson);
+      const computedHash = await sha256Hex(
+        canonicalPacketJson(current.packet),
+      );
       const checks: VerificationCheck[] = [
         {
           id: 'schema',
@@ -491,15 +502,27 @@ export default function CaptainConsole() {
         checks,
       };
 
-      setPacketState((state) =>
-        state?.packet.packet_id === current.packet.packet_id
-          ? {
-              ...state,
-              status: pass ? 'verified' : 'draft',
-              verification: receipt,
-            }
-          : state,
-      );
+      if (packetRef.current !== current) {
+        return {
+          synthetic_demo: true,
+          status: 'packet_changed',
+          packet_id: current.packet.packet_id,
+          side_effects: 'none',
+          authority:
+            'The packet changed during verification; a fresh verification is required.',
+        };
+      }
+
+      const nextPacketState: PacketState = {
+        ...current,
+        status: pass
+          ? current.status === 'approved'
+            ? 'approved'
+            : 'verified'
+          : 'draft',
+        verification: receipt,
+      };
+      syncPacketState(nextPacketState);
       addActivity(
         verifiedBy === 'webmcp_agent' ? 'AGENT' : 'HUMAN',
         pass
@@ -509,7 +532,11 @@ export default function CaptainConsole() {
 
       return {
         synthetic_demo: true,
-        status: pass ? 'verified_for_human_review' : 'verification_failed',
+        status: pass
+          ? current.status === 'approved'
+            ? 'verified_approval_preserved'
+            : 'verified_for_human_review'
+          : 'verification_failed',
         packet_id: current.packet.packet_id,
         packet_sha256: computedHash,
         verified_by: verifiedBy,
@@ -519,7 +546,7 @@ export default function CaptainConsole() {
           'The agent verifies the packet; packet approval and download remain human-only.',
       };
     },
-    [addActivity],
+    [addActivity, syncPacketState],
   );
 
   useEffect(() => {
@@ -820,23 +847,22 @@ export default function CaptainConsole() {
     );
     if (!sourceItem) return;
 
-    setItems((current) =>
-      current.map((item) =>
+    syncItems(
+      itemsRef.current.map((item) =>
         item.id === approved.taskId
           ? { ...item, owner: approved.worker, status: 'approved' }
           : item,
       ),
     );
     const packet = buildEvidencePacket(sourceItem, approved);
-    const packetJson = canonicalPacketJson(packet);
-    const packetSha256 = await sha256Hex(packetJson);
-    setPacketState({
+    const packetSha256 = await sha256Hex(canonicalPacketJson(packet));
+    const nextPacketState: PacketState = {
       packet,
-      packetJson,
       packetSha256,
       status: 'draft',
       verification: null,
-    });
+    };
+    syncPacketState(nextPacketState);
     addActivity(
       'HUMAN',
       `Approved ${approved.taskId} route and generated ${packet.packet_id}.`,
@@ -846,39 +872,85 @@ export default function CaptainConsole() {
 
   const rejectProposal = () => {
     if (!proposal) return;
-    setItems((current) =>
-      current.map((item) =>
+    syncItems(
+      itemsRef.current.map((item) =>
         item.id === proposal.taskId ? { ...item, status: 'queued' } : item,
       ),
     );
     addActivity('HUMAN', `Returned ${proposal.taskId} to the queue.`);
     setProposal(null);
-    setPacketState(null);
+    syncPacketState(null);
   };
 
-  const approvePacket = () => {
+  const approvePacket = async () => {
     const current = packetRef.current;
-    if (!current || current.status !== 'verified') return;
-    setPacketState({ ...current, status: 'approved' });
+    if (
+      !current ||
+      current.status !== 'verified' ||
+      current.verification?.status !== 'pass' ||
+      current.verification.packet_sha256 !== current.packetSha256
+    ) {
+      return;
+    }
+
+    const computedHash = await sha256Hex(
+      canonicalPacketJson(current.packet),
+    );
+    if (
+      packetRef.current !== current ||
+      computedHash !== current.packetSha256 ||
+      current.verification.packet_sha256 !== computedHash
+    ) {
+      if (packetRef.current === current) {
+        syncPacketState({ ...current, status: 'draft', verification: null });
+      }
+      addActivity(
+        'SYSTEM',
+        `Blocked ${current.packet.packet_id} approval because packet integrity changed.`,
+      );
+      return;
+    }
+
+    const nextPacketState: PacketState = { ...current, status: 'approved' };
+    syncPacketState(nextPacketState);
     addActivity(
       'HUMAN',
       `Approved ${current.packet.packet_id} for local download. Release remains false.`,
     );
   };
 
-  const downloadEvidencePacket = () => {
+  const downloadEvidencePacket = async () => {
     const current = packetRef.current;
     if (
       !current ||
       current.status !== 'approved' ||
-      current.verification?.status !== 'pass'
+      current.verification?.status !== 'pass' ||
+      current.verification.packet_sha256 !== current.packetSha256
     ) {
+      return;
+    }
+
+    const computedHash = await sha256Hex(
+      canonicalPacketJson(current.packet),
+    );
+    if (
+      packetRef.current !== current ||
+      computedHash !== current.packetSha256 ||
+      current.verification.packet_sha256 !== computedHash
+    ) {
+      if (packetRef.current === current) {
+        syncPacketState({ ...current, status: 'draft', verification: null });
+      }
+      addActivity(
+        'SYSTEM',
+        `Blocked ${current.packet.packet_id} download because packet integrity changed.`,
+      );
       return;
     }
 
     const envelope = {
       envelope_version: 'captain-evidence-envelope-v1',
-      packet_sha256: current.packetSha256,
+      packet_sha256: computedHash,
       verification: current.verification,
       human_approval: {
         status: 'approved',
@@ -1180,7 +1252,11 @@ export default function CaptainConsole() {
                   </button>
                 )}
                 {packetState.status === 'verified' && (
-                  <button type="button" className="approveButton" onClick={approvePacket}>
+                  <button
+                    type="button"
+                    className="approveButton"
+                    onClick={() => void approvePacket()}
+                  >
                     Human approve packet
                   </button>
                 )}
@@ -1188,7 +1264,7 @@ export default function CaptainConsole() {
                   <button
                     type="button"
                     className="downloadButton"
-                    onClick={downloadEvidencePacket}
+                    onClick={() => void downloadEvidencePacket()}
                   >
                     Download JSON evidence packet
                   </button>

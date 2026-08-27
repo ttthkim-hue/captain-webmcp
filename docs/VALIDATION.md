@@ -8,8 +8,8 @@ Status: **CLI candidate verified; seven-tool desktop QA pending; external releas
 
 | Check | Result |
 | --- | --- |
-| WebMCP contract tests | 7 passed, 0 failed |
-| Deterministic WebMCP checks | 22 passed, 0 failed |
+| WebMCP contract tests | 9 passed, 0 failed |
+| Deterministic WebMCP checks | 25 passed, 0 failed |
 | ESLint | Passed |
 | Production build | Passed |
 
@@ -18,6 +18,13 @@ schemas, registration cleanup, optional execution-signal compatibility, four
 read-only tools, reversible routing writes, receipt-only verification,
 deterministic packet and digest gates, human-only approval and download,
 documentation coverage, and absence of outbound request primitives.
+
+Packet verification now recomputes the digest from the current packet object,
+keeps tool-visible refs synchronized before a tool returns, preserves an
+existing human approval after a passing re-verification, and rechecks the
+receipt digest before approval or download.
+The approval and download paths also recompute the current packet digest and
+return the packet to draft if integrity changed after verification.
 
 ## Historical built-in browser smoke test
 

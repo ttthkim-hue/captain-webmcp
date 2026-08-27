@@ -16,6 +16,15 @@ const webmcpTypes = await readFile(
   'utf8',
 );
 const readme = await readFile(path.join(root, 'README.md'), 'utf8');
+const styles = await readFile(path.join(root, 'app/globals.css'), 'utf8');
+const competitionAssessment = await readFile(
+  path.join(root, 'docs/COMPETITION_ASSESSMENT.md'),
+  'utf8',
+);
+const submissionDraft = await readFile(
+  path.join(root, 'docs/SUBMISSION_DRAFT.md'),
+  'utf8',
+);
 const packageData = JSON.parse(
   await readFile(path.join(root, 'package.json'), 'utf8'),
 );
@@ -84,14 +93,33 @@ test('builds and verifies a deterministic evidence packet contract', () => {
   assert.match(source, /envelope_version: 'captain-evidence-envelope-v1'/);
   assert.match(source, /function canonicalPacketJson\(packet: EvidencePacket\)/);
   assert.match(source, /crypto\.subtle\.digest\(/);
-  assert.match(source, /const computedHash = await sha256Hex\(current\.packetJson\)/);
+  assert.doesNotMatch(source, /packetJson/);
+  assert.match(
+    source,
+    /const computedHash = await sha256Hex\(\s*canonicalPacketJson\(current\.packet\),?\s*\)/,
+  );
+  assert.equal(
+    (source.match(/canonicalPacketJson\(current\.packet\)/g) ?? []).length,
+    3,
+  );
+  assert.match(
+    source,
+    /const packetSha256 = await sha256Hex\(canonicalPacketJson\(packet\)\)/,
+  );
   assert.match(source, /pass: computedHash === current\.packetSha256/);
-  assert.match(source, /status: pass \? 'verified' : 'draft'/);
+  assert.match(source, /status: 'packet_changed'/);
+  assert.match(source, /current\.status === 'approved'\s*\? 'approved'\s*:\s*'verified'/);
+  assert.match(source, /verified_approval_preserved/);
   assert.match(source, /verified_by: 'webmcp_agent'/);
 });
 
 test('download stays human-only behind passing verification and explicit approval', () => {
-  assert.match(source, /if \(!current \|\| current\.status !== 'verified'\) return;/);
+  assert.match(source, /current\.status !== 'verified'/);
+  assert.equal(
+    (source.match(/current\.verification\.packet_sha256 !== current\.packetSha256/g) ?? [])
+      .length,
+    2,
+  );
   assert.match(
     source,
     /current\.status !== 'approved' \|\|\s*current\.verification\?\.status !== 'pass'/,
@@ -100,6 +128,44 @@ test('download stays human-only behind passing verification and explicit approva
   assert.match(source, /authority: 'human_only'/);
   assert.match(source, /release: \{ executed: false \}/);
   assert.match(source, /new Blob\(\[downloadJson\]/);
+  assert.match(
+    source,
+    /computedHash !== current\.packetSha256 \|\|\s*current\.verification\.packet_sha256 !== computedHash/,
+  );
+  assert.match(
+    source,
+    /syncPacketState\(\{ \.\.\.current, status: 'draft', verification: null \}\)/,
+  );
+  assert.match(source, /approval because packet integrity changed/);
+  assert.match(source, /download because packet integrity changed/);
+});
+
+test('keeps tool-visible state current across chained calls', () => {
+  assert.match(
+    source,
+    /const syncItems = useCallback\(\(nextItems: WorkItem\[\]\) => \{\s*itemsRef\.current = nextItems;\s*setItems\(nextItems\);/,
+  );
+  assert.match(
+    source,
+    /const syncPacketState = useCallback\(\(nextState: PacketState \| null\) => \{\s*packetRef\.current = nextState;\s*setPacketState\(nextState\);/,
+  );
+  assert.match(source, /syncPacketState\(null\);\s*syncItems\(/);
+  assert.match(source, /if \(packetRef\.current !== current\)/);
+});
+
+test('documents the implemented artifact and preserves accessible controls', () => {
+  assert.doesNotMatch(competitionAssessment, /handoff contract and manifest/);
+  assert.doesNotMatch(readme, /release-file presence/);
+  assert.match(submissionDraft, /registered WebMCP tool surface/);
+  assert.match(
+    styles,
+    /\.textLink:focus-visible \{[^}]*outline: 3px solid/,
+  );
+  assert.match(
+    styles,
+    /\.proposalActions button \{[^}]*min-height: 44px/,
+  );
+  assert.match(styles, /\.toolSignal \{[^}]*min-height: 44px/);
 });
 
 test('does not contain an outbound request primitive', () => {

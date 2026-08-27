@@ -10,6 +10,7 @@ const readText = (relativePath) =>
 
 const [
   source,
+  styles,
   webmcpTypes,
   readme,
   agents,
@@ -24,6 +25,7 @@ const [
 ] =
   await Promise.all([
     readText('app/captain-console.tsx'),
+    readText('app/globals.css'),
     readText('types/webmcp.d.ts'),
     readText('README.md'),
     readText('AGENTS.md'),
@@ -142,13 +144,47 @@ check(
     source.includes("envelope_version: 'captain-evidence-envelope-v1'") &&
     source.includes('function canonicalPacketJson(packet: EvidencePacket)') &&
     source.includes('crypto.subtle.digest') &&
-    source.includes('const computedHash = await sha256Hex(current.packetJson)') &&
+    !source.includes('packetJson') &&
+    (source.match(/canonicalPacketJson\(current\.packet\)/g) ?? []).length === 3 &&
+    source.includes('sha256Hex(canonicalPacketJson(packet))') &&
     source.includes('pass: computedHash === current.packetSha256') &&
-    source.includes("status: pass ? 'verified' : 'draft'") &&
+    source.includes("status: 'packet_changed'") &&
+    source.includes("? 'approved'") &&
+    source.includes("verified_approval_preserved") &&
     source.includes("current.status !== 'approved'") &&
     source.includes("current.verification?.status !== 'pass'") &&
+    (source.match(/current\.verification\.packet_sha256 !== current\.packetSha256/g) ?? [])
+      .length === 2 &&
+    source.includes('computedHash !== current.packetSha256') &&
+    source.includes("status: 'draft', verification: null") &&
+    source.includes('approval because packet integrity changed') &&
+    source.includes('download because packet integrity changed') &&
     source.includes('new Blob([downloadJson]'),
   'deterministic packet, digest, receipt, and download gates are present',
+);
+check(
+  'shared-state-freshness',
+  source.includes('itemsRef.current = nextItems') &&
+    source.includes('setItems(nextItems)') &&
+    source.includes('packetRef.current = nextState') &&
+    source.includes('setPacketState(nextState)') &&
+    source.includes('if (packetRef.current !== current)'),
+  'tool-visible item and packet refs update synchronously and reject stale verification',
+);
+check(
+  'interaction-accessibility',
+  /\.textLink:focus-visible \{[^}]*outline: 3px solid/s.test(styles) &&
+    /\.proposalActions button \{[^}]*min-height: 44px/s.test(styles) &&
+    /\.toolSignal \{[^}]*min-height: 44px/s.test(styles) &&
+    styles.includes('@media (max-width: 620px)'),
+  'keyboard focus, touch targets, and narrow-screen controls are declared',
+);
+check(
+  'claim-fidelity',
+  !competitionAssessment.includes('handoff contract and manifest') &&
+    !readme.includes('release-file presence') &&
+    submission.includes('registered WebMCP tool surface'),
+  'release text describes the implemented packet and bounds authority to site tools',
 );
 check(
   'forbidden-agent-authority',
