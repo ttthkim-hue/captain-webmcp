@@ -2,7 +2,7 @@
 
 Date: 2026-08-27
 
-Status: **CLI candidate verified; seven-tool desktop QA pending; external release not performed**
+Status: **CLI and seven-tool desktop QA passed; external release not performed**
 
 ## Automated verification
 
@@ -48,8 +48,8 @@ Each tool was invoked once against synthetic item `T-102`.
 - The page displayed `5 SITE TOOLS READY` and `STAGED PROPOSAL`.
 - The human **Return** action removed the staged proposal.
 
-That historical smoke test remains valid for the five named tools, but it is not
-evidence that the expanded seven-tool packet flow works in the desktop app.
+That historical smoke test remains valid for the five named tools. The expanded
+flow was validated separately as recorded below.
 
 ## Compatibility repair captured during smoke testing
 
@@ -58,24 +58,33 @@ first smoke call exposed that mismatch. The implementation now checks an abort
 signal only when supplied, and the behavior is locked by both the TypeScript
 declaration and deterministic tests.
 
-## Seven-tool desktop QA not yet performed
+## Seven-tool desktop QA
 
-The following remain required before final WebMCP acceptance:
+The expanded flow passed in ChatGPT's WebMCP-capable in-app browser against the
+public-synthetic mission:
 
-1. Discover all seven registered tools in ChatGPT's in-app browser.
-2. Invoke each tool against the shared synthetic mission state.
-3. Confirm that human route approval creates the same packet the agent inspects.
-4. Confirm that verification records a passing receipt but cannot approve or
-   download.
-5. Confirm that digest or contract failure keeps packet approval and download
-   locked.
-6. Use the visible controls for human packet approval and JSON download.
-7. Read back the downloaded JSON envelope and match its SHA-256 digest to the
-   packet shown in the interface.
+1. The browser discovered the exact seven registered tools.
+2. Each tool was called against the shared synthetic state.
+3. The agent inspected T-102, compared routes, focused it, and staged Luna.
+4. Only the visible **Human approve route** control created packet
+   `PKT-T-102-LUNA`.
+5. `inspect_evidence_packet` returned the same packet and
+   `verify_evidence_packet` recorded a passing agent receipt without approval
+   or download authority.
+6. Only the visible **Human approve packet** and **Download JSON evidence
+   packet** controls approved and downloaded the envelope.
+7. The downloaded envelope reported verification `pass`, human authority
+   `human_only`, `release.executed=false`, and packet digest
+   `68f6815d2567f652a2b1c97e0dc638e7682623e8778c5f07d28f86ce9dd2b1c3`.
+
+The download file's own SHA-256 was
+`33e83034264b6e8492305bba7c479daabeb6b95d21ab56a90f10aebe2a0504d7`.
+This desktop QA is interaction evidence for the synthetic workflow, not a
+claim that a real worker executed or released software.
 
 ## Release gates not exercised
 
 - No public repository was created or updated.
 - No deployment was performed.
-- No demo video was recorded or published.
+- A local V2 demo video was recorded and verified; it was not published.
 - No contest form was submitted.

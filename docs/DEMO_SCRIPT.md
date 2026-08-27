@@ -1,6 +1,11 @@
-# Captain evidence-packet demo script — target 2 minutes 35 seconds
+# Captain evidence-packet demo script — public recording guide
 
-Status: **future recording plan; not yet recorded or published**
+Status: **local V2 recorded and verified; not published**
+
+The reproducible local V2 uses the exact eight scenes in
+`scripts/video-scenes.json`, plus a three-second intro and four-second outro.
+Its measured runtime is 161.572 seconds. The timeline below remains the manual
+guide for a public browser capture if a deployed-URL recording is preferred.
 
 ## Recording setup
 

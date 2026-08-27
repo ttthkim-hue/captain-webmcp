@@ -2,9 +2,9 @@
 
 Date: 2026-08-27
 
-Status: honest pre-release assessment based on the historical five-tool browser
-smoke test and the current seven-tool CLI candidate. The expanded desktop flow
-is not yet validated. This is not a prediction of the judges' decision.
+Status: honest pre-release assessment based on deterministic application gates,
+the completed seven-tool desktop QA, downloaded digest readback, and the local
+V2 demo artifact. This is not a prediction of the judges' decision.
 
 ## Bottom line
 
@@ -13,9 +13,12 @@ human-approved route creates a deterministic packet, an agent verifies it, and
 a human approves and downloads the JSON envelope. The least-authority model is
 preserved.
 
-This is still a CLI-verified candidate, not a finished submission. The expanded
-seven-tool discovery/calls, shared packet state, human-only packet approval, and
-downloaded JSON/hash readback remain unverified in the desktop app.
+The complete bounded flow is now verified in the desktop app: seven-tool
+discovery and calls, shared packet state, agent receipt verification,
+human-only route and packet approval, JSON download, digest readback, and false
+release state. It is still a release candidate, not a finished submission,
+because hosting, public visibility, video publication, and the Devpost form
+have not been completed.
 
 ## Frozen readiness proxy comparison
 
@@ -28,15 +31,17 @@ downloaded JSON/hash readback remain unverified in the desktop app.
 | **Total** | **64/100** | **81/100** | **+17** |
 
 This frozen readiness proxy is only a deterministic comparison aid for the
-bounded candidate. It is not an official judge score, a top-ten prediction, or
-evidence that desktop WebMCP QA, hosting, publication, or submission passed.
+bounded candidate. It is not an official judge score or a top-ten prediction.
+Desktop WebMCP QA passed separately; hosting, publication, and submission have
+not passed merely because the proxy improved.
 
 ## Persona review
 
 ### Hackathon judge
 
-“The packet makes the outcome tangible, but I still need to see the complete
-seven-tool flow and downloaded artifact work in the contest environment.”
+“The packet makes the outcome tangible, and the complete seven-tool flow now
+has desktop evidence. I still need a working public URL and concise public
+video before treating it as a contest submission.”
 
 ### WebMCP implementer
 
@@ -88,13 +93,13 @@ packet:
 6. the user can download the synthetic evidence artifact.
 
 This preserves the safety model while turning routing into a real deliverable.
-Acceptance still depends on the deterministic gates and the separate desktop QA
-listed in `VALIDATION.md`.
+The deterministic gates and separate desktop QA listed in `VALIDATION.md` both
+passed; external release gates remain separate.
 
 ## Release recommendation
 
-- Do not replace or publish the video until the seven-tool desktop QA and JSON
-  digest readback pass.
+- The seven-tool desktop QA and JSON digest readback passed; use only the
+  validated V2 artifact for any approved publication.
 - Do not market the current version as an autonomous multi-agent production
   system.
 - Keep hosting, repository visibility, merge, video publication, and Devpost

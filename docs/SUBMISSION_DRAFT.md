@@ -101,10 +101,14 @@ tool can approve, download, execute, publish, or release.
 - **Human-agent UX:** agents inspect, stage, and verify; people approve routes
   and packets, download the artifact, and retain release authority.
 
-The seven-tool in-app-browser calls and downloaded JSON/hash readback remain a
-final desktop QA gate. This draft does not claim that gate has passed.
+The seven-tool desktop QA passed in ChatGPT's in-app browser. All seven tools
+were called against the public-synthetic mission, the visible human controls
+approved the route and packet, and the downloaded envelope matched the visible
+packet digest with `release.executed=false`. Hosting, public repository
+visibility, video publication, and form submission remain unperformed.
 
 ## Repository and license
 
 The complete application source, validation scripts, setup instructions, and
-MIT license are included in the public repository.
+MIT license are included in the release-candidate repository. Public
+visibility is enabled only at the approved release step.

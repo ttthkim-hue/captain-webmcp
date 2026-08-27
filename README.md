@@ -106,9 +106,11 @@ cleanup, deterministic packet and digest gates, receipt-only agent verification,
 forbidden agent authority, absence of outbound calls, license presence, and
 social-card dimensions.
 
-These CLI checks do not replace the final desktop QA: the seven tools still
-need discovery and real calls in ChatGPT's in-app browser, followed by JSON
-download and digest readback.
+These CLI checks are complemented by a completed desktop QA in ChatGPT's
+in-app browser. All seven tools were discovered and called against the same
+synthetic mission; visible human controls approved the route and packet, and
+the downloaded JSON digest matched the packet digest while release remained
+false. See `docs/VALIDATION.md` for the bounded evidence record.
 
 ## Safety and privacy
 
@@ -121,9 +123,10 @@ download and digest readback.
 
 ## Release status
 
-The source is a locally verified release candidate. A live URL, public
-repository URL, and public demo-video URL are added only at the human-approved
-release step.
+The source, seven-tool desktop flow, downloaded evidence envelope, and local V2
+demo video are verified release candidates. Hosting, repository visibility,
+public video upload, and contest submission remain separate human-approved
+release actions.
 
 ## License
 
