@@ -1,0 +1,38 @@
+[
+  {
+    "id": "01",
+    "title": "THE HIDDEN HANDOFF",
+    "frame": "01-hero.png",
+    "narration": "Most AI-team dashboards hide the most important moment: who should do the work, why that route is appropriate, and who remains accountable. Captain is a shared Web M C P control room that makes those handoffs visible to both the person and the agent."
+  },
+  {
+    "id": "02",
+    "title": "ONE MISSION, FOUR ROLES",
+    "frame": "02-human-inspection.png",
+    "narration": "This public demo uses a synthetic software-release mission. Sol owns architecture and final judgment. Luna handles scoped implementation. Qwen is a bounded mechanical utility. Exact tools provide hashes, schemas, and reproducible evidence. The person can inspect every task, risk, acceptance rule, and recommended route."
+  },
+  {
+    "id": "03",
+    "title": "SEMANTIC SITE TOOLS",
+    "frame": "04-agent-staged.png",
+    "narration": "The page registers five structured tools through Web M C P. The agent can read the mission, inspect one item, compare all worker routes, focus the same item in the visible interface, and stage a reversible proposal. Inputs use exact task and worker identifiers, so the agent does not need to scrape the page or guess at a click path."
+  },
+  {
+    "id": "04",
+    "title": "SHARED AGENT STATE",
+    "frame": "05-route-comparison.png",
+    "narration": "Here, the agent inspects task T one zero two. It sees a medium-risk dashboard implementation with explicit component and keyboard checks. The route comparison selects Luna, focuses the task in the shared view, and stages the assignment. The page updates immediately, so the person can see exactly what the agent did and why."
+  },
+  {
+    "id": "05",
+    "title": "HUMAN AUTHORITY",
+    "frame": "07-human-activity.png",
+    "narration": "Captain deliberately exposes no tool for approval, execution, publication, or release. The staged proposal changes page state only. A person can return it or approve it through the visible interface. The activity trace records that the decision came from the human, while private data and external services remain outside this demonstration."
+  },
+  {
+    "id": "06",
+    "title": "WHAT THIS DEMONSTRATES",
+    "frame": "06-why-webmcp.png",
+    "narration": "Captain is a bounded interaction pattern, not a claim that real workers completed a release. It demonstrates semantic site tools, shared human-agent state, least-authority actions, and an explicit acceptance boundary. The next step is to connect this pattern to a complete evidence packet, while preserving the same human control."
+  }
+]
