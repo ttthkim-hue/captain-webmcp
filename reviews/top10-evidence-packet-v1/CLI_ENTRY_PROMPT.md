@@ -6,7 +6,7 @@
 - Branch: `agent/top10-evidence-packet-v1`
 - Draft PR: `#1`
 - Stable baseline commit: `2f621ca`
-- Current WIP head at handoff: `6dee5c6`
+- WIP implementation commit: `6dee5c6` (use the current remote branch tip; later commits may contain handoff documentation only)
 - Mode: bounded edit and verification only; no release
 
 먼저 현재 checkout, branch, remote, `git status`, HEAD를 확인하고 루트
