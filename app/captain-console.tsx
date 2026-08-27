@@ -52,6 +52,56 @@ type Activity = {
   time: string;
 };
 
+type EvidencePacket = {
+  schema_version: 'captain-evidence-packet-v1';
+  packet_id: string;
+  synthetic_demo: true;
+  mission: {
+    mission_id: 'MISSION-04';
+    title: 'Prepare a verified public release';
+    privacy_class: 'public_synthetic_only';
+  };
+  handoff: {
+    task_id: TaskId;
+    task_title: string;
+    selected_worker: WorkerId;
+    worker_role: string;
+    reason_code: ReasonCode;
+    risk: WorkItem['risk'];
+  };
+  contract: {
+    evidence_method: string;
+    acceptance_criteria: string[];
+    protected_boundaries: string[];
+  };
+  authority: {
+    route_approved_by: 'human';
+    packet_approval_required: true;
+    release_executed: false;
+  };
+};
+
+type VerificationCheck = {
+  id: string;
+  pass: boolean;
+  detail: string;
+};
+
+type VerificationReceipt = {
+  status: 'pass' | 'fail';
+  packet_sha256: string;
+  verified_by: 'webmcp_agent' | 'human';
+  checks: VerificationCheck[];
+};
+
+type PacketState = {
+  packet: EvidencePacket;
+  packetJson: string;
+  packetSha256: string;
+  status: 'draft' | 'verified' | 'approved';
+  verification: VerificationReceipt | null;
+};
+
 const WORKERS: Worker[] = [
   {
     id: 'sol',
@@ -240,10 +290,60 @@ function currentTime() {
   }).format(new Date());
 }
 
+function buildEvidencePacket(item: WorkItem, approved: Proposal): EvidencePacket {
+  return {
+    schema_version: 'captain-evidence-packet-v1',
+    packet_id: `PKT-${item.id}-${approved.worker.toUpperCase()}`,
+    synthetic_demo: true,
+    mission: {
+      mission_id: 'MISSION-04',
+      title: 'Prepare a verified public release',
+      privacy_class: 'public_synthetic_only',
+    },
+    handoff: {
+      task_id: item.id,
+      task_title: item.title,
+      selected_worker: approved.worker,
+      worker_role: workerFor(approved.worker).role,
+      reason_code: approved.reasonCode,
+      risk: item.risk,
+    },
+    contract: {
+      evidence_method: item.evidence,
+      acceptance_criteria: [...item.acceptance],
+      protected_boundaries: [
+        'No private inputs or identifiers',
+        'No outbound requests or external side effects',
+        'Human approval is required for packet download and release',
+      ],
+    },
+    authority: {
+      route_approved_by: 'human',
+      packet_approval_required: true,
+      release_executed: false,
+    },
+  };
+}
+
+function canonicalPacketJson(packet: EvidencePacket) {
+  return `${JSON.stringify(packet, null, 2)}\n`;
+}
+
+async function sha256Hex(value: string) {
+  const digest = await crypto.subtle.digest(
+    'SHA-256',
+    new TextEncoder().encode(value),
+  );
+  return Array.from(new Uint8Array(digest), (byte) =>
+    byte.toString(16).padStart(2, '0'),
+  ).join('');
+}
+
 export default function CaptainConsole() {
   const [items, setItems] = useState<WorkItem[]>(INITIAL_ITEMS);
   const [selectedTaskId, setSelectedTaskId] = useState<TaskId>('T-102');
   const [proposal, setProposal] = useState<Proposal | null>(null);
+  const [packetState, setPacketState] = useState<PacketState | null>(null);
   const [toolStatus, setToolStatus] = useState<
     'checking' | 'ready' | 'unavailable' | 'error'
   >('unavailable');
@@ -257,11 +357,16 @@ export default function CaptainConsole() {
     },
   ]);
   const itemsRef = useRef(items);
+  const packetRef = useRef(packetState);
   const activityId = useRef(1);
 
   useEffect(() => {
     itemsRef.current = items;
   }, [items]);
+
+  useEffect(() => {
+    packetRef.current = packetState;
+  }, [packetState]);
 
   const selectedItem = useMemo(
     () => items.find((item) => item.id === selectedTaskId) ?? items[0],
@@ -297,6 +402,7 @@ export default function CaptainConsole() {
 
       setSelectedTaskId(taskId);
       setProposal({ taskId, worker, reasonCode, source });
+      setPacketState(null);
       setItems((current) =>
         current.map((candidate) =>
           candidate.id === taskId
@@ -317,6 +423,100 @@ export default function CaptainConsole() {
         reason_code: reasonCode,
         side_effects: 'page_state_only',
         authority: 'No work was executed and no release was approved.',
+      };
+    },
+    [addActivity],
+  );
+
+  const verifyCurrentPacket = useCallback(
+    async (verifiedBy: VerificationReceipt['verified_by']) => {
+      const current = packetRef.current;
+      if (!current) {
+        return {
+          synthetic_demo: true,
+          status: 'packet_not_ready',
+          side_effects: 'none',
+          authority:
+            'A human must approve a staged route before a packet can be verified.',
+        };
+      }
+
+      const sourceItem = INITIAL_ITEMS.find(
+        (item) => item.id === current.packet.handoff.task_id,
+      );
+      const computedHash = await sha256Hex(current.packetJson);
+      const checks: VerificationCheck[] = [
+        {
+          id: 'schema',
+          pass:
+            current.packet.schema_version === 'captain-evidence-packet-v1',
+          detail: 'Evidence packet schema is recognized.',
+        },
+        {
+          id: 'synthetic-boundary',
+          pass:
+            current.packet.synthetic_demo === true &&
+            current.packet.mission.privacy_class === 'public_synthetic_only',
+          detail: 'Packet is explicitly public and synthetic.',
+        },
+        {
+          id: 'task-contract',
+          pass:
+            Boolean(sourceItem) &&
+            sourceItem?.title === current.packet.handoff.task_title &&
+            sourceItem?.evidence === current.packet.contract.evidence_method &&
+            JSON.stringify(sourceItem?.acceptance) ===
+              JSON.stringify(current.packet.contract.acceptance_criteria),
+          detail: 'Task, evidence method, and acceptance criteria match.',
+        },
+        {
+          id: 'human-authority',
+          pass:
+            current.packet.authority.route_approved_by === 'human' &&
+            current.packet.authority.packet_approval_required === true &&
+            current.packet.authority.release_executed === false,
+          detail: 'Human packet approval remains required; release is false.',
+        },
+        {
+          id: 'sha256',
+          pass: computedHash === current.packetSha256,
+          detail: 'Canonical packet JSON matches its SHA-256 digest.',
+        },
+      ];
+      const pass = checks.every((check) => check.pass);
+      const receipt: VerificationReceipt = {
+        status: pass ? 'pass' : 'fail',
+        packet_sha256: computedHash,
+        verified_by: verifiedBy,
+        checks,
+      };
+
+      setPacketState((state) =>
+        state?.packet.packet_id === current.packet.packet_id
+          ? {
+              ...state,
+              status: pass ? 'verified' : 'draft',
+              verification: receipt,
+            }
+          : state,
+      );
+      addActivity(
+        verifiedBy === 'webmcp_agent' ? 'AGENT' : 'HUMAN',
+        pass
+          ? `Verified ${current.packet.packet_id}; packet approval is still human-only.`
+          : `Verification failed for ${current.packet.packet_id}.`,
+      );
+
+      return {
+        synthetic_demo: true,
+        status: pass ? 'verified_for_human_review' : 'verification_failed',
+        packet_id: current.packet.packet_id,
+        packet_sha256: computedHash,
+        verified_by: verifiedBy,
+        checks,
+        side_effects: 'verification_receipt_only',
+        authority:
+          'The agent verifies the packet; packet approval and download remain human-only.',
       };
     },
     [addActivity],
@@ -364,8 +564,15 @@ export default function CaptainConsole() {
                   evidence: item.evidence,
                 })),
                 privacy: 'public_synthetic_only',
+                evidence_packet: packetRef.current
+                  ? {
+                      packet_id: packetRef.current.packet.packet_id,
+                      status: packetRef.current.status,
+                      packet_sha256: packetRef.current.packetSha256,
+                    }
+                  : { status: 'not_created' },
                 authority:
-                  'Agents may inspect and stage proposals. A human must approve assignments and releases.',
+                  'Agents may inspect, stage, and verify. A human must approve assignments, packets, and releases.',
               };
             },
           },
@@ -530,8 +737,69 @@ export default function CaptainConsole() {
           { signal: registration.signal },
         );
 
+        await modelContext.registerTool(
+          {
+            name: 'inspect_evidence_packet',
+            title: 'Inspect evidence packet',
+            description:
+              'Read the current synthetic handoff contract, acceptance criteria, authority boundary, and SHA-256 digest after a human approves the route.',
+            inputSchema: {
+              type: 'object',
+              properties: {},
+              additionalProperties: false,
+            },
+            annotations: { readOnlyHint: true, untrustedContentHint: false },
+            execute: async (_input, options) => {
+              if (options?.signal?.aborted) throw options.signal.reason;
+              const current = packetRef.current;
+              if (!current) {
+                return {
+                  synthetic_demo: true,
+                  status: 'packet_not_ready',
+                  authority:
+                    'A human must approve a staged route before a packet exists.',
+                };
+              }
+              return {
+                synthetic_demo: true,
+                status: current.status,
+                packet: current.packet,
+                packet_sha256: current.packetSha256,
+                verification: current.verification,
+                authority:
+                  'Inspection does not approve, download, publish, or release the packet.',
+              };
+            },
+          },
+          { signal: registration.signal },
+        );
+
+        await modelContext.registerTool(
+          {
+            name: 'verify_evidence_packet',
+            title: 'Verify evidence packet',
+            description:
+              'Recompute the current synthetic packet digest, compare its task contract, and record a visible verification receipt. This never approves or downloads the packet.',
+            inputSchema: {
+              type: 'object',
+              properties: {},
+              additionalProperties: false,
+            },
+            annotations: { readOnlyHint: false, untrustedContentHint: false },
+            execute: async (_input, options) => {
+              if (options?.signal?.aborted) throw options.signal.reason;
+              const result = await verifyCurrentPacket('webmcp_agent');
+              return {
+                ...result,
+                verified_by: 'webmcp_agent',
+              };
+            },
+          },
+          { signal: registration.signal },
+        );
+
         setToolStatus('ready');
-        addActivity('SYSTEM', 'Five WebMCP site tools registered for this page.');
+        addActivity('SYSTEM', 'Seven WebMCP site tools registered for this page.');
       } catch (error) {
         if (!registration.signal.aborted) {
           console.error('WebMCP registration failed', error);
@@ -542,20 +810,36 @@ export default function CaptainConsole() {
 
     void register();
     return () => registration.abort();
-  }, [addActivity, stageAssignment]);
+  }, [addActivity, stageAssignment, verifyCurrentPacket]);
 
-  const approveProposal = () => {
+  const approveProposal = async () => {
     if (!proposal) return;
+    const approved = proposal;
+    const sourceItem = itemsRef.current.find(
+      (item) => item.id === approved.taskId,
+    );
+    if (!sourceItem) return;
+
     setItems((current) =>
       current.map((item) =>
-        item.id === proposal.taskId
-          ? { ...item, owner: proposal.worker, status: 'approved' }
+        item.id === approved.taskId
+          ? { ...item, owner: approved.worker, status: 'approved' }
           : item,
       ),
     );
+    const packet = buildEvidencePacket(sourceItem, approved);
+    const packetJson = canonicalPacketJson(packet);
+    const packetSha256 = await sha256Hex(packetJson);
+    setPacketState({
+      packet,
+      packetJson,
+      packetSha256,
+      status: 'draft',
+      verification: null,
+    });
     addActivity(
       'HUMAN',
-      `Approved ${proposal.taskId} for ${workerFor(proposal.worker).name}.`,
+      `Approved ${approved.taskId} route and generated ${packet.packet_id}.`,
     );
     setProposal(null);
   };
@@ -569,6 +853,54 @@ export default function CaptainConsole() {
     );
     addActivity('HUMAN', `Returned ${proposal.taskId} to the queue.`);
     setProposal(null);
+    setPacketState(null);
+  };
+
+  const approvePacket = () => {
+    const current = packetRef.current;
+    if (!current || current.status !== 'verified') return;
+    setPacketState({ ...current, status: 'approved' });
+    addActivity(
+      'HUMAN',
+      `Approved ${current.packet.packet_id} for local download. Release remains false.`,
+    );
+  };
+
+  const downloadEvidencePacket = () => {
+    const current = packetRef.current;
+    if (
+      !current ||
+      current.status !== 'approved' ||
+      current.verification?.status !== 'pass'
+    ) {
+      return;
+    }
+
+    const envelope = {
+      envelope_version: 'captain-evidence-envelope-v1',
+      packet_sha256: current.packetSha256,
+      verification: current.verification,
+      human_approval: {
+        status: 'approved',
+        authority: 'human_only',
+      },
+      release: { executed: false },
+      packet: current.packet,
+    };
+    const downloadJson = `${JSON.stringify(envelope, null, 2)}\n`;
+    const blob = new Blob([downloadJson], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `${current.packet.packet_id.toLowerCase()}-evidence.json`;
+    document.body.append(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+    addActivity(
+      'HUMAN',
+      `Downloaded ${current.packet.packet_id}; no release was executed.`,
+    );
   };
 
   const stageRecommended = () => {
@@ -588,7 +920,7 @@ export default function CaptainConsole() {
 
   const statusLabel = {
     checking: 'CHECKING SITE TOOLS',
-    ready: '5 SITE TOOLS READY',
+    ready: '7 SITE TOOLS READY',
     unavailable: 'UI READY · WEBMCP NOT DETECTED',
     error: 'SITE TOOL REGISTRATION ERROR',
   }[toolStatus];
@@ -621,8 +953,8 @@ export default function CaptainConsole() {
           <h1>One manager. The right worker. Every decision visible.</h1>
           <p className="lede">
             Captain turns a mixed AI fleet into a legible team. The agent can
-            inspect, compare, and stage work while the human keeps release
-            authority.
+            inspect, compare, stage, and verify a real evidence packet while
+            the human keeps approval, download, and release authority.
           </p>
           <div className="heroActions">
             <button
@@ -645,7 +977,7 @@ export default function CaptainConsole() {
         <div className="heroStat" aria-label="Current mission health">
           <span>MISSION HEALTH</span>
           <strong>READY</strong>
-          <small>4 checks passing · 0 private inputs</small>
+          <small>7 semantic tools · 0 private inputs</small>
           <div className="healthLine">
             <i />
             <i />
@@ -760,11 +1092,112 @@ export default function CaptainConsole() {
               Return
             </button>
             <button type="button" className="approveButton" onClick={approveProposal}>
-              Human approve
+              Human approve route
             </button>
           </div>
         </section>
       )}
+
+      <section className="evidencePacket panel" id="evidence-packet" aria-live="polite">
+        <div className="packetIntro">
+          <div className="panelHead compactHead">
+            <p className="sectionLabel">EVIDENCE PACKET</p>
+            <span className={`packetStatus ${packetState?.status ?? 'locked'}`}>
+              {packetState?.status ?? 'locked'}
+            </span>
+          </div>
+          <h2>A routing decision becomes proof.</h2>
+          <p>
+            Route approval creates a stable handoff contract. The agent verifies
+            the packet against the original task and SHA-256 digest. Packet
+            approval and download remain human-only.
+          </p>
+
+          {packetState ? (
+            <div className="packetContract">
+              <div>
+                <span>PACKET</span>
+                <strong>{packetState.packet.packet_id}</strong>
+              </div>
+              <div>
+                <span>HANDOFF</span>
+                <strong>
+                  {packetState.packet.handoff.task_id} →{' '}
+                  {workerFor(packetState.packet.handoff.selected_worker).name}
+                </strong>
+              </div>
+              <div>
+                <span>EVIDENCE</span>
+                <strong>{packetState.packet.contract.evidence_method}</strong>
+              </div>
+            </div>
+          ) : (
+            <div className="packetEmpty">
+              <span>01</span>
+              <p>Stage a route and use <b>Human approve route</b> to create the packet.</p>
+            </div>
+          )}
+        </div>
+
+        <div className="packetVerification">
+          <span className="verificationLabel">DETERMINISTIC RECEIPT</span>
+          {!packetState ? (
+            <>
+              <strong>Waiting for route approval</strong>
+              <p>No packet exists yet. The agent cannot invent one.</p>
+            </>
+          ) : (
+            <>
+              <strong>
+                {packetState.status === 'draft'
+                  ? 'Waiting for agent verification'
+                  : packetState.status === 'verified'
+                    ? 'All contract checks passed'
+                    : 'Human-approved download ready'}
+              </strong>
+              <code title={packetState.packetSha256}>
+                SHA-256 {packetState.packetSha256.slice(0, 16)}…
+              </code>
+              <div className="verificationChecks">
+                {(packetState.verification?.checks ?? [
+                  { id: 'schema', pass: false, detail: 'Schema and synthetic boundary' },
+                  { id: 'contract', pass: false, detail: 'Task and acceptance contract' },
+                  { id: 'authority', pass: false, detail: 'Human authority and digest' },
+                ]).map((check) => (
+                  <span className={check.pass ? 'pass' : 'pending'} key={check.id}>
+                    {check.pass ? '✓' : '○'} {check.detail}
+                  </span>
+                ))}
+              </div>
+              <div className="packetActions">
+                {packetState.status === 'draft' && (
+                  <button
+                    type="button"
+                    className="ghostButton"
+                    onClick={() => void verifyCurrentPacket('human')}
+                  >
+                    Verify locally
+                  </button>
+                )}
+                {packetState.status === 'verified' && (
+                  <button type="button" className="approveButton" onClick={approvePacket}>
+                    Human approve packet
+                  </button>
+                )}
+                {packetState.status === 'approved' && (
+                  <button
+                    type="button"
+                    className="downloadButton"
+                    onClick={downloadEvidencePacket}
+                  >
+                    Download JSON evidence packet
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      </section>
 
       <section
         className={`briefing panel ${briefingOpen ? 'open' : ''}`}
@@ -778,15 +1211,17 @@ export default function CaptainConsole() {
             Open this page in ChatGPT&apos;s built-in browser and use the prompt
             below. The agent can inspect live state through the registered site
             tools, focus the same work item you see, compare routes, and stage a
-            reversible proposal.
+            reversible proposal. After you approve the route, the agent verifies
+            the packet and leaves final approval to you.
           </p>
         </div>
         <div className="promptCard">
           <span>SUGGESTED PROMPT</span>
           <p>
             Inspect the mission, compare routes for T-102, focus it in the shared
-            interface, then stage the safest assignment. Do not approve or
-            execute the work.
+            interface, then stage the safest assignment. After I approve the
+            route, inspect and verify the evidence packet. Do not approve,
+            download, publish, or release anything.
           </p>
         </div>
       </section>
@@ -841,6 +1276,11 @@ export default function CaptainConsole() {
             <h3>Human authority</h3>
             <p>Agents stage proposals; approval and release remain explicit human actions.</p>
           </article>
+          <article>
+            <span>04</span>
+            <h3>Verifiable output</h3>
+            <p>A stable packet and digest turn an opaque handoff into portable evidence.</p>
+          </article>
         </div>
       </section>
 
@@ -868,7 +1308,7 @@ export default function CaptainConsole() {
       <footer>
         <span>PUBLIC SYNTHETIC DATA</span>
         <span>HUMAN RELEASE GATE</span>
-        <span>5 IMPERATIVE WEBMCP TOOLS</span>
+        <span>7 IMPERATIVE WEBMCP TOOLS</span>
         <span>WEBMCP DRAFT · 2026</span>
       </footer>
     </main>

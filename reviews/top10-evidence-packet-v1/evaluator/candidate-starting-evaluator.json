@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "evaluator": "Captain competition readiness proxy v1",
+  "score": 67,
+  "baseline_score": 64,
+  "delta": 3,
+  "direction": "higher_is_better",
+  "minimum_meaningful_delta": 10,
+  "threshold_met": false,
+  "axes": {
+    "webmcp_leverage": 19,
+    "execution": 20,
+    "potential_impact": 11,
+    "creativity_ambition": 17
+  },
+  "criteria": {
+    "webmcp_artifact_tools": false,
+    "coherent_artifact_ui": false,
+    "tangible_verified_output": false,
+    "human_agent_artifact_collaboration": true
+  },
+  "evaluator_sha256": "8F1FB350ECD78B3DC21C1EFF774B68644AA8EFF7F91431A2B282BD2B2C0E9933",
+  "rubric_sha256": "30E3769A3906F8E849B8714024A3DB1BC41E1E07FC0759AD71D18AE4FF388E9D",
+  "caveat": "WIP starting-state proxy only; not a predicted judge score or rank."
+}

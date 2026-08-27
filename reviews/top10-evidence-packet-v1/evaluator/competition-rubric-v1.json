@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "name": "Captain competition readiness proxy v1",
+  "purpose": "A frozen, conservative proxy for one bounded product-outcome improvement. It is not a predicted judge score or rank.",
+  "official_sources": [
+    "https://openai.com/webmcp-challenge/",
+    "https://webmcp.devpost.com/"
+  ],
+  "baseline": {
+    "webmcp_leverage": 19,
+    "execution": 20,
+    "potential_impact": 11,
+    "creativity_ambition": 14,
+    "total": 64
+  },
+  "candidate_bonuses": [
+    {
+      "id": "webmcp_artifact_tools",
+      "axis": "webmcp_leverage",
+      "points": 4,
+      "description": "The agent can semantically inspect and verify a generated evidence packet through bounded WebMCP tools."
+    },
+    {
+      "id": "coherent_artifact_ui",
+      "axis": "execution",
+      "points": 3,
+      "description": "The visible product has a complete packet lifecycle with distinct route approval, verification, packet approval, and download states."
+    },
+    {
+      "id": "tangible_verified_output",
+      "axis": "potential_impact",
+      "points": 7,
+      "description": "The mission produces a deterministic, hashed, downloadable JSON evidence artifact rather than only a routing decision."
+    },
+    {
+      "id": "human_agent_artifact_collaboration",
+      "axis": "creativity_ambition",
+      "points": 3,
+      "description": "The agent records a verification receipt while final packet approval and download remain human-only."
+    }
+  ],
+  "minimum_meaningful_delta": 10,
+  "quality_floor": {
+    "unit_tests": "pass",
+    "webmcp_contract": "pass",
+    "lint": "pass",
+    "production_build": "pass",
+    "live_browser_flow": "pass",
+    "secret_scan_findings": 0
+  }
+}
